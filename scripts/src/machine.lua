@@ -2285,7 +2285,7 @@ end
 --@src/devices/machine/macseconds.h,MACHINES["MACSECONDS"] = true
 ---------------------------------------------------
 
-if MACHINES["MACSECONDS"] then
+if MACHINES["MACSECONDS"] or (os.getenv("RETROM_DYLINK_POC") == "1" and CPUS["M6805"]) then
 	files {
 		MAME_DIR .. "src/devices/machine/macseconds.cpp",
 		MAME_DIR .. "src/devices/machine/macseconds.h",

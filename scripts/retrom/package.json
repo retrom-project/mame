@@ -1,0 +1,6 @@
+{
+  "name": "retrom-mame-dylink-poc",
+  "private": true,
+  "type": "module",
+  "devDependencies": {"playwright-core": "1.61.1"}
+}

@@ -566,7 +566,7 @@ end
 --@src/lib/formats/cbm_tap.h,FORMATS["CBM_TAP"] = true
 --------------------------------------------------
 
-if opt_tool(FORMATS, "CBM_TAP") then
+if opt_tool(FORMATS, "CBM_TAP") or (os.getenv("RETROM_DYLINK_POC") == "1" and BUSES["PET"]) then
 	files {
 		MAME_DIR.. "src/lib/formats/cbm_tap.cpp",
 		MAME_DIR.. "src/lib/formats/cbm_tap.h",

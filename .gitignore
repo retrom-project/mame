@@ -40,6 +40,7 @@
 !/Makefile.libretro
 !/mame.doxygen
 !/*.md
+!/retrom-fork.json
 !/*.bdf
 !/LICENSE
 /.idea

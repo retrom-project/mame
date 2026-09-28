@@ -27,6 +27,11 @@
 #define ASIO_STANDALONE
 #define ASIO_SEPARATE_COMPILATION
 
+#if defined(RETROM_DYLINK_POC) && defined(__EMSCRIPTEN__)
+// Match MAME's Emscripten platform selection at the ASIO boundary.
+#define ASIO_HAS_PTHREADS
+#endif
+
 #include <asio.hpp>
 #undef interface
 

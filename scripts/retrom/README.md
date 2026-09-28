@@ -1,0 +1,133 @@
+# MAME dynamic-linking build
+
+This build supplies a shared MAME WASM and driver-family WASM modules. Its first
+Retrom product candidate exposes Apple II+ (`apple2p`); Atom and PV-1000 remain
+standalone diagnostic experiments. Integration and game acceptance belong to
+retrom-runtime and Retrom. No stable core release has been published yet.
+All feature inputs and generated artifacts belong to the named PFB.
+
+## Design
+
+`families.json` selects source families through MAME's `SOURCES` generator:
+Apple II and its variants, Acorn Atom variants, and Casio PV-1000. These are small
+representatives of the proposed larger Apple/Acorn/console packages, not their
+complete platform inventories.
+
+The build compiles one union object graph with Emscripten 3.1.74, PIC, native
+WASM exceptions and `-O2`. A common `MAIN_MODULE=2` owns the libretro frontend,
+MAME framework and shared devices. Each `SIDE_MODULE=2` owns its driver objects,
+private devices and a versioned driver descriptor. MAME's generated device,
+format and disassembler selections determine ownership; shared objects are
+removed from the common set when their dependencies require private objects.
+The resulting partition is included in `object-partition.json`.
+
+The common module retains the symbols actually imported by the linked side
+modules. Static controls link the same source families and object code without
+dynamic linking. Neither control uses LTO. Both include assertions and the same
+small test host, so measurements describe this experiment rather than an
+optimized production release.
+
+A fresh Emscripten Module, memory and driver registry are created for each
+launch. Only downloaded immutable bytes are reused across launches. A Module
+accepts one family once. Common and family artifacts must have the same build
+ID; this C++ boundary does not promise compatibility across MAME/toolchain
+versions. No WASM component-model ABI, hot unload, threading or shared live
+machine state is implied.
+
+The loader verifies WASM SHA-256 and length before instantiation. Corrupt cached
+bytes are evicted and fetched again; unavailable CacheStorage falls back to
+fetch. Cache eviction by the browser can still cause later downloads. Common
+and family assets use content hashes and ordinary HTTP immutable caching too.
+
+## Build and run
+
+From the workspace root, after creating the named PFB and selecting this MAME
+checkout in its `CORE_ROOTS`:
+
+```sh
+RETROM_EMSDK_ROOT="$PWD/tools/emsdk-3.1.74-linux-x64" \
+  make -C .worktree/mame-dylink-poc/project/retrom \
+  pfb-core-build PFB=mame-dylink-poc CORE=mame
+
+python3 .worktree/mame-dylink-poc/project/retrom-core/mame/scripts/retrom/serve.py \
+  .worktree/mame-dylink-poc/project/retrom-core/mame/build/retrom/poc-current
+```
+
+Open `http://localhost:4785`. The server binds only to loopback, serves Brotli
+or gzip, and records actual compressed response bytes at `/__requests`.
+Compression uses Brotli quality 11 and gzip level 9.
+
+The shared SDK is installed with `emsdk install 3.1.74` and `emsdk activate
+3.1.74`. Compiler and core build caches stay inside this MAME worktree. The build
+does not modify the shell profile. Python 3, a host C/C++ compiler, GNU Make and
+the SDK's pinned Node.js 20.18.0 are also required. Compression uses that SDK
+binary so it does not depend on the host shell's Node.js version.
+
+## Verification
+
+From this MAME checkout:
+
+```sh
+python3 -m unittest discover -s scripts/retrom -p 'test_*.py'
+npm --prefix scripts/retrom ci --ignore-scripts
+RETROM_CHROME_EXECUTABLE=/absolute/path/to/chrome \
+  node scripts/retrom/browser-test.mjs build/retrom/evidence
+```
+
+Restart the local server before each browser suite so its request log starts
+empty. The test uses a fresh browser context and fresh pages for every launch.
+It checks all three families in both link modes: actual emulated CPU execution,
+rendered output, non-silent PCM, input changing guest RAM and pixels, and save
+restoration into a new instance after first changing that instance's state.
+It also checks A → B → A cache reuse, one common-WASM transfer across families,
+duplicate registration, unknown family/build rejection, corrupt cache recovery
+and a storage-unavailable fallback.
+
+`diagnostics.py` generates original small 6502/Z80 programs and replacement
+firmware; no vendor BIOS or commercial game is bundled. Apple/Atom checksum
+warnings are expected. The original MAME machine drivers and ROM audit remain
+enabled. This proves the linking/runtime path, not compatibility with a real
+game library or every driver included in a family. Apple input is A; Atom and
+PV-1000 input is Up. The programs change a visible block and produce sound.
+
+The comparison must include common + family + JS on first use, the additional
+family bytes on subsequent use, and the cumulative totals for all sampled
+families. A small side module alone is not evidence of reduced download cost.
+Browser compilation, relocation, memory and C++ export overhead can outweigh
+the savings for users who launch only one family.
+
+To regenerate the payload comparison (WASM and generated Emscripten JS;
+excluding diagnostic firmware and the shared PoC page):
+
+```sh
+python3 scripts/retrom/measure.py \
+  build/retrom/poc-current \
+  > build/retrom/measurements.json
+```
+
+The measured snapshot and its limits are recorded in [RESULTS.md](RESULTS.md).
+
+## Product candidate
+
+The explicit core build publishes eight flat release assets and a strict
+`retrom-core-candidate.json` descriptor at the PFB core output. They include
+common JS/WASM, Apple-family WASM, precompressed Brotli companions, build/asset
+identities and license texts. The PoC page, diagnostics, static controls and
+other family modules stay in `build/retrom/poc-current`; they are not Provider
+assets. The ABI is `retrom-mame-dylink-v1`. The common module exports native
+lifecycle, video/audio, keyboard, joystick, serialization and family registration
+functions, including the native display aspect ratio for non-square pixels. Runtime verifies all asset hashes, ABI and native build identity
+before registering the family. A family mismatch is rejected natively too.
+
+The product pilot uses Apple II+ with a Disk II card, its nested controller ROM
+and an Apple joystick. Runtime mounts the seven Apple ROMs, card ROM and
+controller ROM from the host's verified BIOS resources. A single 143360-byte
+DOS-order `.dsk`/`.do` is mounted read-only. Writable disks, other disk formats,
+other Apple models and the other experimental families have not been admitted
+to the product target. Raw native state is wrapped with content and native-build
+identities by the runtime; the Provider's public boundary compresses it once.
+
+These flat core assets are intentionally separate from the deterministic
+Provider archives produced by retrom-runtime. Compare every core asset's hash
+across repeated builds, and compare the full Provider archives (including
+archive metadata) across repeated aggregation of the same inputs.

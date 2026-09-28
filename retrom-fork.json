@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "forkRepository": "https://github.com/retrom-project/mame",
+  "defaultBranch": "retrom/gf65d5ba9bc42",
+  "upstreamMirrorBranch": "master",
+  "upstreams": [
+    {
+      "role": "libretro-core",
+      "repository": "https://github.com/libretro/mame",
+      "refType": "COMMIT",
+      "ref": "f65d5ba9bc42febea7cd76d4559827d0e1271581",
+      "commit": "f65d5ba9bc42febea7cd76d4559827d0e1271581"
+    }
+  ],
+  "adapterAbi": "retrom-mame-dylink-v1",
+  "releaseAssets": [
+    "mame-build.json",
+    "mame-common.mjs",
+    "mame-common.mjs.br",
+    "mame-common.wasm",
+    "mame-common.wasm.br",
+    "mame-apple.wasm",
+    "mame-apple.wasm.br",
+    "LICENSES.txt"
+  ]
+}

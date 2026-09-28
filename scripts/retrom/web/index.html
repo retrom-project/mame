@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>MAME 动态链接 PoC</title>
+<style>
+body{margin:32px auto;padding:0 24px;max-width:1100px;background:#111827;color:#e5e7eb;font:16px system-ui}
+button,select{font:inherit;padding:10px;margin:4px;background:#25334a;color:inherit;border:1px solid #52627b;border-radius:6px}
+iframe{display:block;width:100%;height:740px;border:1px solid #52627b;margin-top:20px;background:#080d16}
+a{color:#93c5fd} p{line-height:1.6}
+</style>
+<h1>MAME 公共运行时与设备族</h1>
+<p>同一份公共 WASM，按需加载一个设备族。每次启动创建独立实例，共享经过摘要校验的浏览器缓存。</p>
+<label>设备族 <select id="family"><option value="apple">Apple II</option><option value="acorn">Acorn Atom</option><option value="vintage">Casio PV-1000</option></select></label>
+<label>链接方式 <select id="mode"><option value="dynamic">动态链接</option><option value="static">静态基线</option></select></label>
+<button id="launch">启动新实例</button><button id="clear">清空 PoC WASM 缓存</button>
+<p>内置样本是项目自有诊断程序，运行在真实 MAME 机器驱动上。Apple II 按 A；Atom、PV-1000 按 ↑。这些样本用于验证画面、输入、声音和存档，不代表商业游戏兼容性验收。</p>
+<p><a href="manifest.json">产物与压缩体积</a> · <a href="object-partition.json">设备对象归属</a></p>
+<iframe id="player" title="MAME 实例"></iframe>
+<script type="module">
+const family = document.querySelector('#family'), mode = document.querySelector('#mode');
+document.querySelector('#launch').onclick = () => {
+  document.querySelector('#player').src = `run.html?family=${family.value}&mode=${mode.value}`;
+};
+document.querySelector('#clear').onclick = async () => {
+  await caches.delete('retrom-mame-poc-v1');
+  document.querySelector('#clear').textContent = '缓存已清空';
+};
+</script></html>

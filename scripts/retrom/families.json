@@ -1,0 +1,5 @@
+{
+  "apple": {"sources": ["apple/apple2.cpp"], "machine": "apple2p"},
+  "acorn": {"sources": ["acorn/atom.cpp"], "machine": "atom"},
+  "vintage": {"sources": ["casio/pv1000.cpp"], "machine": "pv1000"}
+}
