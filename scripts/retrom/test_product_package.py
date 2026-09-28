@@ -19,7 +19,7 @@ class ProductPackageTest(unittest.TestCase):
             poc = root / "poc"
             poc.mkdir()
             assets = {}
-            for name in ("mame-common.mjs", "mame-common.wasm", "mame-apple.wasm"):
+            for name in ("mame-common.mjs", "mame-common.wasm", "mame-apple.wasm", "mame-acorn.wasm", "mame-vintage.wasm"):
                 (poc / name).write_bytes(b"raw")
                 (poc / (name + ".br")).write_bytes(b"br")
                 assets[name] = {"path": name, "sha256": "a" * 64, "sizeBytes": 3}
@@ -38,7 +38,10 @@ class ProductPackageTest(unittest.TestCase):
                     outputs.append({p.name: p.read_bytes() for p in output.iterdir()})
             self.assertEqual(outputs[0], outputs[1])
             descriptor = json.loads(outputs[0]["retrom-core-candidate.json"])
-            self.assertEqual(8, len(descriptor["files"]))
+            self.assertEqual(12, len(descriptor["files"]))
+            metadata = json.loads(outputs[0]["mame-build.json"])
+            self.assertEqual({"apple": ["apple2p"], "acorn": ["atom"], "vintage": ["pv1000"]},
+                             {family: info["machines"] for family, info in metadata["families"].items()})
 
 
 if __name__ == "__main__":

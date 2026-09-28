@@ -452,6 +452,9 @@ void m6502_device::state_import(const device_state_entry &entry)
 		m_P = m_P | (F_B|F_E);
 		break;
 	case M6502_PC:
+		// A debugger/quickload PC change starts a new instruction. A timer can
+		// interrupt a partial instruction, whose old substate must not survive.
+		m_inst_substate = 0;
 		m_PC = m_NPC;
 		m_irq_taken = false;
 		prefetch_start();

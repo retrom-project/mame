@@ -21,6 +21,10 @@
     "mame-common.wasm.br",
     "mame-apple.wasm",
     "mame-apple.wasm.br",
+    "mame-acorn.wasm",
+    "mame-acorn.wasm.br",
+    "mame-vintage.wasm",
+    "mame-vintage.wasm.br",
     "LICENSES.txt"
   ]
 }

@@ -1,8 +1,8 @@
 # MAME dynamic-linking build
 
-This build supplies a shared MAME WASM and driver-family WASM modules. Its first
-Retrom product candidate exposes Apple II+ (`apple2p`); Atom and PV-1000 remain
-standalone diagnostic experiments. Integration and game acceptance belong to
+This build supplies a shared MAME WASM and driver-family WASM modules. The Retrom
+product candidate exposes Apple II+ (`apple2p`), Acorn Atom (`atom`) and
+Casio PV-1000 (`pv1000`). Integration and game acceptance belong to
 retrom-runtime and Retrom. No stable core release has been published yet.
 All feature inputs and generated artifacts belong to the named PFB.
 
@@ -69,6 +69,7 @@ From this MAME checkout:
 
 ```sh
 python3 -m unittest discover -s scripts/retrom -p 'test_*.py'
+node scripts/retrom/test_quickload.mjs /absolute/pfb/core-builds/mame/current build/retrom/poc-current/diagnostics
 npm --prefix scripts/retrom ci --ignore-scripts
 RETROM_CHROME_EXECUTABLE=/absolute/path/to/chrome \
   node scripts/retrom/browser-test.mjs build/retrom/evidence
@@ -109,22 +110,30 @@ The measured snapshot and its limits are recorded in [RESULTS.md](RESULTS.md).
 
 ## Product candidate
 
-The explicit core build publishes eight flat release assets and a strict
+The explicit core build publishes twelve flat release assets and a strict
 `retrom-core-candidate.json` descriptor at the PFB core output. They include
-common JS/WASM, Apple-family WASM, precompressed Brotli companions, build/asset
-identities and license texts. The PoC page, diagnostics, static controls and
-other family modules stay in `build/retrom/poc-current`; they are not Provider
+common JS/WASM, Apple/Acorn/vintage-family WASM, precompressed Brotli companions, build/asset
+identities and license texts. The PoC page, static controls and
+diagnostic firmware stay in `build/retrom/poc-current`; they are not Provider
 assets. The ABI is `retrom-mame-dylink-v1`. The common module exports native
 lifecycle, video/audio, keyboard, joystick, serialization and family registration
 functions, including the native display aspect ratio for non-square pixels. Runtime verifies all asset hashes, ABI and native build identity
 before registering the family. A family mismatch is rejected natively too.
 
+A 6502 program-counter import clears the prior partial-instruction phase. Without
+this, an Atom quickload timer can copy a valid ATM file but resume a stale CPU
+instruction instead of its execution address. `test_quickload.mjs` reproduces
+this boundary using only original diagnostic firmware and a generated program.
+
 The product pilot uses Apple II+ with a Disk II card, its nested controller ROM
 and an Apple joystick. Runtime mounts the seven Apple ROMs, card ROM and
 controller ROM from the host's verified BIOS resources. A single 143360-byte
 DOS-order `.dsk`/`.do` is mounted read-only. Writable disks, other disk formats,
-other Apple models and the other experimental families have not been admitted
-to the product target. Raw native state is wrapped with content and native-build
+other Apple models have not been admitted to the product target. Atom accepts
+a single ATM quickload file and mounts abasic.ic20 plus afloat.ic21; the disk
+expansion is disabled. Machine-code ATM files run at their execution address;
+BASIC programs may require a physical RUN command. UEF and disks are not product
+inputs. PV-1000 accepts one 8/16/32 KiB cartridge without firmware. Raw native state is wrapped with content and native-build
 identities by the runtime; the Provider's public boundary compresses it once.
 
 These flat core assets are intentionally separate from the deterministic

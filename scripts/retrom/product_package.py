@@ -1,4 +1,4 @@
-"""Publish the explicit Apple II product pilot; other families remain PoC-only."""
+"""Publish the supported machines with their shared runtime and driver families."""
 import hashlib
 import json
 import shutil
@@ -11,14 +11,16 @@ ABI = "retrom-mame-dylink-v1"
 def product_package(root, poc, output, emscripten):
     manifest = json.loads((poc / "manifest.json").read_text())
     entries = {}
-    for name in ("mame-common.mjs", "mame-common.wasm", "mame-apple.wasm"):
+    for name in ("mame-common.mjs", "mame-common.wasm", "mame-apple.wasm", "mame-acorn.wasm", "mame-vintage.wasm"):
         asset = manifest["assets"][name]
         for suffix in ("", ".br"):
             shutil.copyfile(poc / (asset["path"] + suffix), output / (name + suffix))
         entries[name] = {"sha256": asset["sha256"], "sizeBytes": asset["sizeBytes"]}
     metadata = {"schemaVersion": 1, "adapterAbi": ABI, "buildId": manifest["buildId"],
                 "emscripten": manifest["emscripten"], "assets": entries,
-                "families": {"apple": {"module": "mame-apple.wasm", "machines": ["apple2p"]}}}
+                "families": {"apple": {"module": "mame-apple.wasm", "machines": ["apple2p"]},
+                             "acorn": {"module": "mame-acorn.wasm", "machines": ["atom"]},
+                             "vintage": {"module": "mame-vintage.wasm", "machines": ["pv1000"]}}}
     (output / "mame-build.json").write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n")
     tracked = subprocess.check_output(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"], cwd=root).split(b"\0")
     paths = sorted(set(Path(p.decode()) for p in tracked if p))
