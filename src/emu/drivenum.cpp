@@ -19,6 +19,34 @@
 
 #include <cctype>
 
+#ifdef RETROM_DYLINK_POC
+namespace {
+std::vector<game_driver const *> retrom_family_drivers;
+}
+std::size_t driver_list::s_driver_count = 0;
+game_driver const *const *driver_list::s_drivers_sorted = nullptr;
+
+bool driver_list::register_family(game_driver const *const *drivers, std::size_t count)
+{
+	if (s_driver_count || !drivers || !count || count > 65536)
+		return false;
+	std::vector<game_driver const *> candidate(drivers, drivers + count);
+	for (auto const *driver : candidate)
+		if (!driver || !driver->name || !driver->name[0])
+			return false;
+	std::sort(candidate.begin(), candidate.end(), [](auto *a, auto *b) {
+		return core_stricmp(a->name, b->name) < 0;
+	});
+	for (std::size_t i = 1; i < candidate.size(); ++i)
+		if (!core_stricmp(candidate[i - 1]->name, candidate[i]->name))
+			return false;
+	retrom_family_drivers = std::move(candidate);
+	s_drivers_sorted = retrom_family_drivers.data();
+	s_driver_count = retrom_family_drivers.size();
+	return true;
+}
+#endif
+
 
 
 //**************************************************************************

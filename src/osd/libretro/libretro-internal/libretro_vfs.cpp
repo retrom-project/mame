@@ -178,6 +178,7 @@ bool libretro_vfs_read_whole_file(const char *path, std::string &out)
       out.clear();
       return false;
    }
+   return true;
 }
 
 std::error_condition libretro_vfs_open(std::string const &path, std::uint32_t openflags, osd_file::ptr &file, std::uint64_t &filesize) noexcept

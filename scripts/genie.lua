@@ -1164,6 +1164,12 @@ if not toolchain(MAME_BUILD_DIR, subdir) then
 end
 
 configuration { "asmjs" }
+if os.getenv("RETROM_DYLINK_POC") == "1" then
+	buildoptions { "-fPIC", "-fwasm-exceptions" }
+	buildoptions_c { "-std=gnu89", "-Wno-implicit-function-declaration" }
+	buildoptions_cpp { "-std=c++20" }
+	defines { "SOUND_DISABLE_THREADING", "RETROM_DYLINK_POC" }
+else
 	buildoptions {
 		"-std=gnu89",
 		"-Wno-implicit-function-declaration",
@@ -1238,6 +1244,7 @@ configuration { "asmjs" }
 		}
 	end
 	archivesplit_size "20"
+end
 
 configuration { "android*" }
 	buildoptions {

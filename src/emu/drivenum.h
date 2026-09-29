@@ -64,9 +64,19 @@ public:
 	// static helpers
 	static bool matches(const char *wildstring, const char *string);
 
+#ifdef RETROM_DYLINK_POC
+	// Install exactly one family before constructing any driver enumerator.
+	static bool register_family(game_driver const *const *drivers, std::size_t count);
+#endif
+
 protected:
+#ifdef RETROM_DYLINK_POC
+	static std::size_t                  s_driver_count;
+	static game_driver const *const *   s_drivers_sorted;
+#else
 	static std::size_t const            s_driver_count;
 	static game_driver const * const    s_drivers_sorted[];
+#endif
 };
 
 
