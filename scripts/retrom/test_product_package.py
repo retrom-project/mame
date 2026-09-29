@@ -43,6 +43,10 @@ class ProductPackageTest(unittest.TestCase):
             self.assertEqual(outputs[0], outputs[1])
             descriptor = json.loads(outputs[0]["retrom-core-candidate.json"])
             self.assertEqual(15, len(descriptor["files"]))
+            with patch("product_package.subprocess.check_output", side_effect=git):
+                product_package(root, poc, root / "first", sdk)
+            repeated = json.loads((root / "first/retrom-core-candidate.json").read_text())
+            self.assertEqual(descriptor["files"], repeated["files"])
             metadata = json.loads(outputs[0]["mame-build.json"])
             self.assertEqual(families,
                              {family: info["machines"] for family, info in metadata["families"].items()})

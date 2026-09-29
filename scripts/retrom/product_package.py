@@ -15,7 +15,8 @@ def product_package(root, poc, output, emscripten):
     manifest = json.loads((poc / "manifest.json").read_text())
     entries = {}
     family_names = sorted(manifest["families"])
-    for name in ("mame-common.mjs", "mame-common.wasm", *(f"mame-{family}.wasm" for family in family_names)):
+    module_names = ("mame-common.mjs", "mame-common.wasm", *(f"mame-{family}.wasm" for family in family_names))
+    for name in module_names:
         asset = manifest["assets"][name]
         for suffix in ("", ".br"):
             shutil.copyfile(poc / (asset["path"] + suffix), output / (name + suffix))
@@ -45,8 +46,10 @@ def product_package(root, poc, output, emscripten):
     (output / "LICENSES.txt").write_text("MAME and bundled third-party license texts\n" + "".join(licenses))
     def git(*args):
         return subprocess.check_output(["git", *args], cwd=root).decode().strip()
-    files = [{"filename": p.name, "sizeBytes": p.stat().st_size,
-              "sha256": hashlib.sha256(p.read_bytes()).hexdigest()} for p in sorted(output.iterdir())]
+    release_names = ("LICENSES.txt", "mame-arcade.xml", "mame-build.json",
+                     *(name + suffix for name in module_names for suffix in ("", ".br")))
+    files = [{"filename": name, "sizeBytes": (output / name).stat().st_size,
+              "sha256": hashlib.sha256((output / name).read_bytes()).hexdigest()} for name in sorted(release_names)]
     descriptor = {"schemaVersion": 1, "kind": "RETROM_CORE_CANDIDATE_V1", "coreId": "mame",
                   "repository": "https://github.com/retrom-project/mame",
                   "branch": git("branch", "--show-current"), "commit": git("rev-parse", "HEAD"),
