@@ -23,7 +23,6 @@ class ProductPackageTest(unittest.TestCase):
                         "vintage": ["pv1000"], "pacman": ["mspacman", "puckman"]}
             for name in ("mame-common.mjs", "mame-common.wasm", *(f"mame-{family}.wasm" for family in families)):
                 (poc / name).write_bytes(b"raw")
-                (poc / (name + ".br")).write_bytes(b"br")
                 assets[name] = {"path": name, "sha256": "a" * 64, "sizeBytes": 3}
             (poc / "manifest.json").write_text(json.dumps({"assets": assets, "buildId": "b" * 64, "emscripten": "3.1.74",
                                                       "families": {name: {"drivers": machines} for name, machines in families.items()}}))
@@ -42,7 +41,7 @@ class ProductPackageTest(unittest.TestCase):
                     outputs.append({p.name: p.read_bytes() for p in output.iterdir()})
             self.assertEqual(outputs[0], outputs[1])
             descriptor = json.loads(outputs[0]["retrom-core-candidate.json"])
-            self.assertEqual(15, len(descriptor["files"]))
+            self.assertEqual(9, len(descriptor["files"]))
             with patch("product_package.subprocess.check_output", side_effect=git):
                 product_package(root, poc, root / "first", sdk)
             repeated = json.loads((root / "first/retrom-core-candidate.json").read_text())
