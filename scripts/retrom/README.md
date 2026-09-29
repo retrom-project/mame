@@ -5,7 +5,7 @@ product candidate exposes Apple II+ (`apple2p`), Apple IIe (`apple2e`),
 Acorn Atom (`atom`), Casio PV-1000 (`pv1000`), SG-1000 (`sg1000`),
 ColecoVision (`coleco`), and the MAME Current Arcade driver inventory including
 Sega Model 2. Integration and game acceptance belong to
-retrom-runtime and Retrom. No stable core release has been published yet.
+retrom-runtime and Retrom. The stable core Release is built from this candidate.
 All feature inputs and generated artifacts belong to the named PFB.
 
 ## Design
@@ -131,10 +131,10 @@ The measured snapshot and its limits are recorded in [RESULTS.md](RESULTS.md).
 
 ## Product candidate
 
-The explicit core build publishes flat common/family assets, its exact-build
+The explicit core build prepares flat common/family assets in the PFB, its exact-build
 Arcade DAT, and a strict
 `retrom-core-candidate.json` descriptor at the PFB core output. They include
-common JS/WASM, Apple/Acorn/vintage/Arcade-family WASM, precompressed Brotli companions, build/asset
+common JS/WASM, Apple/Acorn/vintage/Arcade-family WASM, build/asset
 identities and license texts. The PoC page, static controls and
 diagnostic firmware stay in `build/retrom/poc-current`; they are not Provider
 assets. The ABI is `retrom-mame-dylink-v1`. The common module exports native
@@ -165,3 +165,14 @@ These flat core assets are intentionally separate from the deterministic
 Provider archives produced by retrom-runtime. Compare every core asset's hash
 across repeated builds, and compare the full Provider archives (including
 archive metadata) across repeated aggregation of the same inputs.
+
+## Compact core Release
+
+The GitHub Release contains only `mame-current-assets.zip` and
+`rpg-runtime-release.json`. The archive and installed Provider contain only
+original files. Retrom compresses MAME JavaScript and WASM on demand for HTTP
+content negotiation. The candidate stays flat for local builds and diagnostics.
+
+After tagging the merged source commit, run
+`python3 scripts/retrom/release_archive.py <candidate-dir> <output-dir> <tag>`.
+The builder verifies every candidate byte and writes a deterministic ZIP.

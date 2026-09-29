@@ -18,8 +18,7 @@ def product_package(root, poc, output, emscripten):
     module_names = ("mame-common.mjs", "mame-common.wasm", *(f"mame-{family}.wasm" for family in family_names))
     for name in module_names:
         asset = manifest["assets"][name]
-        for suffix in ("", ".br"):
-            shutil.copyfile(poc / (asset["path"] + suffix), output / (name + suffix))
+        shutil.copyfile(poc / asset["path"], output / name)
         entries[name] = {"sha256": asset["sha256"], "sizeBytes": asset["sizeBytes"]}
     metadata = {"schemaVersion": 1, "adapterAbi": ABI, "buildId": manifest["buildId"],
                 "emscripten": manifest["emscripten"], "assets": entries,
@@ -47,7 +46,7 @@ def product_package(root, poc, output, emscripten):
     def git(*args):
         return subprocess.check_output(["git", *args], cwd=root).decode().strip()
     release_names = ("LICENSES.txt", "mame-arcade.xml", "mame-build.json",
-                     *(name + suffix for name in module_names for suffix in ("", ".br")))
+                     *module_names)
     files = [{"filename": name, "sizeBytes": (output / name).stat().st_size,
               "sha256": hashlib.sha256((output / name).read_bytes()).hexdigest()} for name in sorted(release_names)]
     descriptor = {"schemaVersion": 1, "kind": "RETROM_CORE_CANDIDATE_V1", "coreId": "mame",
