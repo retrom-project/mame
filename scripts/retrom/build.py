@@ -55,6 +55,13 @@ def main():
         run([*host, "clean"])
         run([*host, "-j4"])
     families = json.loads((ROOT / "scripts/retrom/families.json").read_text())
+    legacy = json.loads((ROOT / "scripts/retrom/legacy_arcade_sources.json").read_text())
+    if os.environ.get("RETROM_MAME_ARCADE_PILOT") != "1":
+        if legacy["schemaVersion"] != 1 or legacy["oldMachineCount"] != 5294:
+            raise RuntimeError("Arcade source inventory mismatch")
+        families.update(legacy["families"])
+    else:
+        families["pacman"]["arcade"] = True
     projects = {name: generate("poc_" + name, family["sources"], env)
                 for name, family in families.items()}
     union = sorted({source for family in families.values() for source in family["sources"]})
@@ -67,6 +74,13 @@ def main():
     with tempfile.TemporaryDirectory(prefix="poc-build.", dir=BUILD) as temporary:
         poc = Path(temporary)
         link_all(ROOT, BUILD, poc, project, projects, families, env)
+        if os.environ.get("RETROM_MAME_ARCADE_PILOT") != "1":
+            included = {driver for family in families.values() for driver in family["drivers"]}
+            missing = set(legacy["requiredCurrentNames"]) - included
+            if missing:
+                raise RuntimeError(f"Current Arcade driver coverage incomplete: {sorted(missing)[:20]}")
+        run([sys.executable, ROOT / "scripts/retrom/generate_arcade_dat.py", poc,
+             env["RETROM_MAME_COMPRESSION_NODE"]], env=env)
         from product_package import product_package
         product_package(ROOT, poc, output, Path(env["EMSCRIPTEN"]))
         shutil.copytree(poc, BUILD / "poc-current", dirs_exist_ok=True)

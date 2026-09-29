@@ -5,7 +5,9 @@
 #include "mame.h"
 #include "libretro.h"
 #include "family.h"
+#include "infoxml.h"
 #include <cstring>
+#include <fstream>
 #include <vector>
 #ifndef RETROM_POC_STATIC
 #include <dlfcn.h>
@@ -23,6 +25,13 @@ retro_system_av_info av_info = {};
 bool started = false;
 bool shutdown_requested = false;
 retro_keyboard_event_t keyboard_event = nullptr;
+
+bool supports_save()
+{
+    auto *manager = mame_machine_manager::instance();
+    return started && manager && manager->machine() &&
+        !(manager->machine()->system().type.emulation_flags() & device_t::flags::SAVE_UNSUPPORTED);
+}
 
 bool environment(unsigned command, void *data)
 {
@@ -43,6 +52,10 @@ bool environment(unsigned command, void *data)
     case RETRO_ENVIRONMENT_GET_VARIABLE: {
         auto *variable = static_cast<retro_variable *>(data);
         variable->value = nullptr;
+        // The browser canvas consumes the core's pixels directly. Ask MAME to
+        // rotate portrait drivers itself instead of expecting frontend rotation.
+        if (std::strstr(variable->key, "_rotation_mode"))
+            variable->value = "internal";
         if (std::strstr(variable->key, "_throttle") || std::strstr(variable->key, "_autosave"))
             variable->value = "disabled";
         if (std::strstr(variable->key, "_boot_from_cli"))
@@ -125,6 +138,16 @@ void retrom_mame_axis(unsigned id, int value) { if (id < 2 && value >= -32767 &&
 unsigned retrom_mame_driver_count() { return driver_list::total(); }
 char const *retrom_mame_driver_name(unsigned i) { return i < driver_list::total() ? driver_list::driver(i).name : ""; }
 
+int retrom_mame_listxml()
+{
+    if (!driver_list::total()) return 0;
+    std::ofstream output("/content/mame-arcade.xml", std::ios::binary);
+    if (!output) return 0;
+    emu_options options;
+    info_xml_creator(options, false).output(output, {}, false);
+    return output.good() ? 1 : 0;
+}
+
 int retrom_mame_start(char const *path)
 {
     if (started || !driver_list::total() || !path) return 0;
@@ -163,9 +186,9 @@ unsigned retrom_mame_frames() { return frames; }
 uint32_t const *retrom_mame_pixels() { return pixels.data(); }
 int16_t const *retrom_mame_audio() { return samples.data(); }
 unsigned retrom_mame_audio_count() { return samples.size(); }
-unsigned retrom_mame_save_size() { return started ? retro_serialize_size() : 0; }
-int retrom_mame_save(void *data, unsigned size) { return started && retro_serialize(data, size); }
-int retrom_mame_restore(void const *data, unsigned size) { return started && retro_unserialize(data, size); }
+unsigned retrom_mame_save_size() { return supports_save() ? retro_serialize_size() : 0; }
+int retrom_mame_save(void *data, unsigned size) { return supports_save() && retro_serialize(data, size); }
+int retrom_mame_restore(void const *data, unsigned size) { return supports_save() && retro_unserialize(data, size); }
 int retrom_mame_peek(unsigned address)
 {
     auto *manager = mame_machine_manager::instance();

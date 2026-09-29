@@ -19,11 +19,15 @@ class ProductPackageTest(unittest.TestCase):
             poc = root / "poc"
             poc.mkdir()
             assets = {}
-            for name in ("mame-common.mjs", "mame-common.wasm", "mame-apple.wasm", "mame-acorn.wasm", "mame-vintage.wasm"):
+            families = {"apple": ["apple2p", "apple2e"], "acorn": ["atom"],
+                        "vintage": ["pv1000"], "pacman": ["mspacman", "puckman"]}
+            for name in ("mame-common.mjs", "mame-common.wasm", *(f"mame-{family}.wasm" for family in families)):
                 (poc / name).write_bytes(b"raw")
                 (poc / (name + ".br")).write_bytes(b"br")
                 assets[name] = {"path": name, "sha256": "a" * 64, "sizeBytes": 3}
-            (poc / "manifest.json").write_text(json.dumps({"assets": assets, "buildId": "b" * 64, "emscripten": "3.1.74"}))
+            (poc / "manifest.json").write_text(json.dumps({"assets": assets, "buildId": "b" * 64, "emscripten": "3.1.74",
+                                                      "families": {name: {"drivers": machines} for name, machines in families.items()}}))
+            (poc / "mame-arcade.xml").write_text("<mame/>")
             def git(argv, **kwargs):
                 return {"ls-files": b"COPYING\0docs/legal/GPL-2.0\0", "branch": b"feat/test", "rev-parse": b"c" * 40,
                         "status": b" M COPYING"}[argv[1]]
@@ -38,9 +42,9 @@ class ProductPackageTest(unittest.TestCase):
                     outputs.append({p.name: p.read_bytes() for p in output.iterdir()})
             self.assertEqual(outputs[0], outputs[1])
             descriptor = json.loads(outputs[0]["retrom-core-candidate.json"])
-            self.assertEqual(12, len(descriptor["files"]))
+            self.assertEqual(15, len(descriptor["files"]))
             metadata = json.loads(outputs[0]["mame-build.json"])
-            self.assertEqual({"apple": ["apple2p"], "acorn": ["atom"], "vintage": ["pv1000"]},
+            self.assertEqual(families,
                              {family: info["machines"] for family, info in metadata["families"].items()})
 
 

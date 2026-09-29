@@ -9,19 +9,24 @@ ABI = "retrom-mame-dylink-v1"
 
 
 def product_package(root, poc, output, emscripten):
+    if not (poc / "mame-arcade.xml").is_file():
+        node = emscripten.parents[1] / "node/20.18.0_64bit/bin/node"
+        subprocess.run(["python3", root / "scripts/retrom/generate_arcade_dat.py", poc, node], check=True)
     manifest = json.loads((poc / "manifest.json").read_text())
     entries = {}
-    for name in ("mame-common.mjs", "mame-common.wasm", "mame-apple.wasm", "mame-acorn.wasm", "mame-vintage.wasm"):
+    family_names = sorted(manifest["families"])
+    for name in ("mame-common.mjs", "mame-common.wasm", *(f"mame-{family}.wasm" for family in family_names)):
         asset = manifest["assets"][name]
         for suffix in ("", ".br"):
             shutil.copyfile(poc / (asset["path"] + suffix), output / (name + suffix))
         entries[name] = {"sha256": asset["sha256"], "sizeBytes": asset["sizeBytes"]}
     metadata = {"schemaVersion": 1, "adapterAbi": ABI, "buildId": manifest["buildId"],
                 "emscripten": manifest["emscripten"], "assets": entries,
-                "families": {"apple": {"module": "mame-apple.wasm", "machines": ["apple2p"]},
-                             "acorn": {"module": "mame-acorn.wasm", "machines": ["atom"]},
-                             "vintage": {"module": "mame-vintage.wasm", "machines": ["pv1000"]}}}
+                "families": {name: {"module": f"mame-{name}.wasm", "machines": family["drivers"],
+                                    "arcade": family.get("arcade", False)}
+                             for name, family in sorted(manifest["families"].items())}}
     (output / "mame-build.json").write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n")
+    shutil.copyfile(poc / "mame-arcade.xml", output / "mame-arcade.xml")
     tracked = subprocess.check_output(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"], cwd=root).split(b"\0")
     paths = sorted(set(Path(p.decode()) for p in tracked if p))
     source_hash = hashlib.sha256()

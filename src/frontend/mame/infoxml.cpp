@@ -547,7 +547,14 @@ void info_xml_creator::output(std::ostream &out, const std::function<bool (const
 
 			// add this task to the queue
 			active_task_count++;
+			// The Retrom WebAssembly build has no pthreads.  A deferred task
+			// keeps the normal ordered output without waiting for a worker
+			// that cannot run in the single-threaded build.
+#ifdef RETROM_DYLINK_POC
+			tasks.emplace(std::async(std::launch::deferred, std::move(task_proc)));
+#else
 			tasks.emplace(std::async(std::launch::async, std::move(task_proc)));
+#endif
 		}
 
 		// we've put as many outstanding tasks out as we can; are there any tasks outstanding?

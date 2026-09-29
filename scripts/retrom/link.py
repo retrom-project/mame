@@ -8,13 +8,14 @@ from pathlib import Path
 from build_graph import archive, make_values, partition
 
 EXPORTS = ["retrom_mame_abi", "retrom_mame_build_id", "retrom_mame_fps", "retrom_mame_sample_rate", "retrom_mame_axis", "retrom_mame_attach", "retrom_mame_driver_count", "retrom_mame_driver_name", "retrom_mame_start", "retrom_mame_step",
+           "retrom_mame_listxml",
            "retrom_mame_aspect_ratio",
            "retrom_mame_key", "retrom_mame_button", "retrom_mame_width", "retrom_mame_height", "retrom_mame_frames", "retrom_mame_pixels",
            "retrom_mame_audio", "retrom_mame_audio_count", "retrom_mame_save_size", "retrom_mame_save", "retrom_mame_restore", "retrom_mame_peek", "retrom_mame_stop",
            "malloc", "free"]
 
 
-def fingerprint(root):
+def fingerprint(root, families):
     digest = hashlib.sha256()
     digest.update(subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=root))
     digest.update(subprocess.check_output(["git", "diff", "HEAD", "--", "src", "scripts/genie.lua", "scripts/src"], cwd=root))
@@ -22,6 +23,7 @@ def fingerprint(root):
     for name in ("bridge.cpp", "family.h", "families.json", "build.py", "build_graph.py", "link.py", "wasm_metadata.py"):
         path = root / "scripts/retrom" / name
         digest.update(name.encode() + b"\0" + path.read_bytes())
+    digest.update(json.dumps({name: family["sources"] for name, family in sorted(families.items())}, sort_keys=True).encode())
     return digest.hexdigest()
 
 
@@ -71,7 +73,7 @@ def link_all(root, build, output, project, projects, families, env):
     objects = [path for path in main["OBJECTS"] if path.name != "drivlist.o"]
     run(["make", "-f", "poc_all.make", "config=libretro", "-j4",
          *[str(path.relative_to(root)).replace("build/", "../../../../", 1) for path in objects]])
-    build_id = fingerprint(root)
+    build_id = fingerprint(root, families)
     cpp = [Path(env["EMSCRIPTEN"]) / "em++", *main["FLAGS"], "-I" + str(root / "src/frontend/mame"),
            "-I" + str(root / "scripts/retrom"), '-DRETROM_POC_BUILD_ID="' + build_id + '"']
     bridge = build / "bridge.o"
@@ -79,7 +81,25 @@ def link_all(root, build, output, project, projects, families, env):
     run([*cpp, "-c", root / "scripts/retrom/bridge.cpp", "-o", bridge])
     run([*cpp, "-DRETROM_POC_STATIC", "-c", root / "scripts/retrom/bridge.cpp", "-o", static_bridge])
     common, specific = partition(project, projects, env)
-    common_archives = archive(build / "common-devices.a", common, env)
+    # GENie's header selector misses a few transitive device dependencies in
+    # the broad legacy Arcade source set. Keep their implementations in the
+    # shared runtime so every family that imports one resolves the same symbol.
+    supplemental_sources = [
+        "src/devices/machine/40105.cpp", "src/devices/machine/6525tpi.cpp",
+        "src/devices/machine/ds1302.cpp", "src/devices/machine/ds75160a.cpp",
+        "src/devices/machine/ds75161a.cpp", "src/devices/machine/mc6852.cpp",
+        "src/devices/machine/at_keybc.cpp",
+        "src/devices/machine/mos8726.cpp", "src/devices/machine/scc2698b.cpp",
+        "src/devices/machine/vic_pl192.cpp", "src/devices/sound/t6721a.cpp",
+        "src/devices/video/pc_vga_mediagx.cpp", "src/lib/formats/cbm_crt.cpp",
+        "src/lib/formats/mfm_hd.cpp", "src/lib/formats/tibdd001_dsk.cpp",
+    ]
+    supplemental = []
+    for source in (supplemental_sources if env.get("RETROM_MAME_ARCADE_PILOT") != "1" else []):
+        obj = build / ("supplemental-" + source.replace("/", "-").replace(".cpp", ".o"))
+        run([*cpp, "-c", root / source, "-o", obj])
+        supplemental.append(obj)
+    common_archives = archive(build / "common-devices.a", [*common, *supplemental], env)
     common_archives += [p for p in main["LIBDEPS"] if p.name not in
                         ("libmame_poc_all.a", "liboptional.a", "libformats.a", "libdasm.a")]
     driver_objects = make_values(project, "mame_poc_all", env)["OBJECTS"]
@@ -132,8 +152,9 @@ def link_all(root, build, output, project, projects, families, env):
              '-sEXPORTED_RUNTIME_METHODS=["FS","ccall","UTF8ToString"]']
     run([*linker, *flags, "-sMAIN_MODULE=2", "-sEXPORTED_RUNTIME_METHODS=[FS,ccall,UTF8ToString,loadDynamicLibrary]",
          "@" + str(retain), bridge, *objects, *common_archives, "-o", output / "mame-common.mjs"])
-    for name, inputs in family_inputs.items():
-        run([*linker, *flags, static_bridge, *objects, *inputs, *common_archives,
-             "-o", output / ("mame-static-" + name + ".mjs")])
+    if env.get("RETROM_MAME_STATIC_COMPARISON") == "1":
+        for name, inputs in family_inputs.items():
+            run([*linker, *flags, static_bridge, *objects, *inputs, *common_archives,
+                 "-o", output / ("mame-static-" + name + ".mjs")])
     from package import package
     package(root, output, families, build_id, common, specific, env["RETROM_MAME_COMPRESSION_NODE"])

@@ -1,5 +1,9 @@
 {
-  "apple": {"sources": ["apple/apple2.cpp"], "machine": "apple2p"},
+  "apple": {"sources": ["apple/apple2.cpp", "apple/apple2e.cpp"], "machine": "apple2p"},
   "acorn": {"sources": ["acorn/atom.cpp"], "machine": "atom"},
-  "vintage": {"sources": ["casio/pv1000.cpp"], "machine": "pv1000"}
+  "vintage": {"sources": ["casio/pv1000.cpp"], "machine": "pv1000"},
+  "sg1000": {"sources": ["sega/sg1000.cpp"], "machine": "sg1000"},
+  "coleco": {"sources": ["coleco/coleco.cpp"], "machine": "coleco"},
+  "arcade_model2": {"sources": ["sega/model2.cpp"], "machine": "daytona", "arcade": true},
+  "pacman": {"sources": ["pacman/pacman.cpp"], "machine": "mspacman"}
 }
