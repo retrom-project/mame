@@ -144,7 +144,7 @@ int retrom_mame_listxml()
     std::ofstream output("/content/mame-arcade.xml", std::ios::binary);
     if (!output) return 0;
     emu_options options;
-    info_xml_creator(options, false).output(output, {}, false);
+    info_xml_creator(options, false).output(output, {}, true);
     return output.good() ? 1 : 0;
 }
 
@@ -160,7 +160,24 @@ int retrom_mame_start(char const *path)
     retro_init();
     retro_game_info info{path, nullptr, 0, nullptr};
     started = retro_load_game(&info);
-    if (started) retro_get_system_av_info(&av_info);
+    if (started) {
+        // Startup UI may clear libretro's RLOOP without executing the machine.
+        // A restored scheduler must not precede the first actual emulation frame.
+        // The bound rejects a stuck startup; it is not a warm-up frame count.
+        auto *manager = mame_machine_manager::instance();
+        for (unsigned attempt = 0; attempt < 120 && !shutdown_requested; ++attempt) {
+            samples.clear();
+            retro_run();
+            auto *machine = manager ? manager->machine() : nullptr;
+            if (machine && !machine->paused() && machine->time() > attotime::zero && frames) {
+                retro_get_system_av_info(&av_info);
+                return 1;
+            }
+        }
+        retro_unload_game();
+        retro_deinit();
+        started = false;
+    }
     return started;
 }
 
