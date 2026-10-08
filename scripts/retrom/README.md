@@ -90,6 +90,8 @@ The original browser comparison requires a pilot build with both
 
 ```sh
 python3 -m unittest discover -s scripts/retrom -p 'test_*.py'
+node scripts/retrom/test_checkpoint.mjs /absolute/pfb/core-builds/mame/current coleco
+node scripts/retrom/test_checkpoint.mjs /absolute/pfb/core-builds/mame/current vintage
 node scripts/retrom/test_quickload.mjs /absolute/pfb/core-builds/mame/current build/retrom/poc-current/diagnostics
 npm --prefix scripts/retrom ci --ignore-scripts
 RETROM_CHROME_EXECUTABLE=/absolute/path/to/chrome \
@@ -160,6 +162,16 @@ one 8-64 KiB cartridge without firmware; ColecoVision accepts one 8-32 KiB
 cartridge and requires its 8 KiB system ROM. Sega Model 2 is part of the same
 Arcade Current target and uses exact-build DAT validation for ROM sets. Raw native state is wrapped with content and native-build
 identities by the runtime; the Provider's public boundary compresses it once.
+
+Native start returns only after the machine has advanced emulated time and
+produced a video frame. This prevents checkpoint restoration into the libretro
+startup UI phase. A bounded failure check rejects stuck startup; callers do not
+need machine-specific warm-up frames. ColecoVision NTSC saves its controller
+pulse timing alongside the existing CPU, RAM, video and controller state.
+
+The exact-build DAT includes device references and device ROM definitions.
+Shared devices are emitted once after checking consistent facts across families;
+device records are firmware dependencies, not playable Arcade machines.
 
 These flat core assets are intentionally separate from the deterministic
 Provider archives produced by retrom-runtime. Compare every core asset's hash

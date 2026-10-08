@@ -525,6 +525,7 @@ void coleco_state::machine_start()
 	save_item(NAME(m_joy_d7_state));
 	save_item(NAME(m_joy_analog_state));
 	save_item(NAME(m_joy_analog_reload));
+	save_item(NAME(m_joy_pulse_reload));
 }
 
 void bit90_state::machine_start()
@@ -759,7 +760,7 @@ ROM_END
 /* System Drivers */
 
 //    YEAR  NAME      PARENT  COMPAT  MACHINE   INPUT   CLASS         INIT        COMPANY             FULLNAME                            FLAGS
-CONS( 1982, coleco,   0,      0,      coleco,   coleco, coleco_state, empty_init, "Coleco",           "ColecoVision (NTSC)",              0 )
+CONS( 1982, coleco,   0,      0,      coleco,   coleco, coleco_state, empty_init, "Coleco",           "ColecoVision (NTSC)",              MACHINE_SUPPORTS_SAVE )
 CONS( 1982, onyx,     coleco, 0,      coleco,   coleco, coleco_state, empty_init, "Microdigital",     "Onyx (Brazil/Prototype)",          0 )
 CONS( 1983, colecop,  coleco, 0,      colecop,  coleco, coleco_state, empty_init, "Coleco",           "ColecoVision (PAL)",               0 )
 CONS( 1986, czz50,    0,      coleco, czz50,    czz50,  coleco_state, empty_init, "Bit Corporation",  "Chuang Zao Zhe 50",                0 )

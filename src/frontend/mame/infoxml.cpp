@@ -961,7 +961,12 @@ void output_devices(std::ostream &out, emu_options &lookup_options, device_type_
 
 						// add this task to the queue
 						active_task_count++;
+#ifdef RETROM_DYLINK_POC
+						// Device XML uses the same single-threaded queue as drivers.
+						tasks.emplace(std::async(std::launch::deferred, std::move(task_proc)));
+#else
 						tasks.emplace(std::async(std::launch::async, std::move(task_proc)));
+#endif
 					}
 
 					// we've put as many outstanding tasks out as we can; are there any tasks outstanding?

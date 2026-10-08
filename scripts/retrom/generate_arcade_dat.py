@@ -10,8 +10,8 @@ import tempfile
 import xml.etree.ElementTree as ET
 
 ROOT = Path(__file__).resolve().parents[2]
-KEEP = {"description", "year", "manufacturer", "biosset", "rom", "disk", "sample"}
-ATTRS = {"name", "cloneof", "romof", "isbios"}
+KEEP = {"description", "year", "manufacturer", "biosset", "rom", "disk", "sample", "device_ref"}
+ATTRS = {"name", "cloneof", "romof", "isbios", "isdevice", "runnable"}
 
 
 def compact_machine(machine):
@@ -23,6 +23,32 @@ def compact_machine(machine):
     if biossets and not any(bios.get("default") == "yes" for bios in biossets):
         biossets[0].set("default", "yes")
     return compact
+
+
+def validate_roster(root, expected, family):
+    machines = {m.get("name"): m for m in root if m.tag == "machine"}
+    drivers = {name for name, m in machines.items() if m.get("isdevice") != "yes"}
+    if drivers != expected:
+        raise RuntimeError(f"MAME XML roster mismatch: {family} ({len(drivers)} vs {len(expected)})")
+    for machine in machines.values():
+        for ref in machine.findall("device_ref"):
+            device = machines.get(ref.get("name"))
+            if device is None or device.get("isdevice") != "yes":
+                raise RuntimeError(f"Missing device: {family}/{ref.get('name')}")
+
+
+def merge_machine(seen, compact):
+    name = compact.get("name")
+    # Devices shared by separate linked families must describe identical ROMs.
+    payload = ET.canonicalize(ET.tostring(compact, encoding="unicode"), strip_text=True)
+    if name in seen:
+        if compact.get("isdevice") != "yes":
+            raise RuntimeError(f"Duplicate Arcade machine: {name}")
+        if seen[name] != payload:
+            raise RuntimeError(f"Inconsistent Arcade device: {name}")
+        return False
+    seen[name] = payload
+    return True
 
 
 def generate(output: Path, node: Path):
@@ -40,10 +66,8 @@ def generate(output: Path, node: Path):
             root = tree.getroot()
             if root.tag != "mame":
                 raise RuntimeError(f"MAME XML root invalid: {name}")
-            machines = {machine.get("name") for machine in root if machine.tag == "machine"}
             expected = set(families[name]["drivers"]) - {"___empty"}
-            if machines != expected:
-                raise RuntimeError(f"MAME XML roster mismatch: {name} ({len(machines)} vs {len(expected)})")
+            validate_roster(root, expected, name)
             return name, raw
         with ThreadPoolExecutor(max_workers=min(4, len(families))) as pool:
             files = {pool.submit(extract, name): name for name in sorted(families)}
@@ -51,7 +75,7 @@ def generate(output: Path, node: Path):
                 task.result()
                 print("Arcade DAT family:", files[task], flush=True)
         pending = output / "mame-arcade.xml.tmp"
-        seen = set()
+        seen = {}
         try:
             with pending.open("wb") as target:
                 target.write((f'<?xml version="1.0" encoding="utf-8"?>\n'
@@ -61,11 +85,9 @@ def generate(output: Path, node: Path):
                     for machine in root:
                         if machine.tag != "machine":
                             continue
-                        shortname = machine.get("name")
-                        if shortname in seen:
-                            raise RuntimeError(f"Duplicate Arcade machine: {shortname}")
-                        seen.add(shortname)
                         compact = compact_machine(machine)
+                        if not merge_machine(seen, compact):
+                            continue
                         target.write(ET.tostring(compact, encoding="utf-8"))
                         target.write(b"\n")
                 target.write(b"</mame>\n")
