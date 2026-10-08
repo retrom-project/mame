@@ -7,13 +7,12 @@ import {pathToFileURL} from 'node:url';
 const root = resolve(process.argv[2]);
 const create = (await import(pathToFileURL(root + '/mame-common.mjs'))).default;
 const family = process.argv[3] ?? 'coleco';
-assert.ok(['coleco', 'sg1000', 'vintage'].includes(family));
+assert.ok(['coleco', 'vintage'].includes(family));
 
 // The Z80 updates a counter in machine RAM at an observable rate.
 // No firmware/game bytes from the original systems are used.
-const address = family === 'coleco' ? 0x6000 : family === 'sg1000' ? 0xc000 : 0xb800;
-// An 8 KiB SG cartridge is detected as the X-Terminator accessory by MAME.
-const rom = new Uint8Array(family === 'sg1000' ? 32768 : 8192);
+const address = family === 'coleco' ? 0x6000 : 0xb800;
+const rom = new Uint8Array(8192);
 rom.set([0xf3, 0x31, (address + 0x3f0) & 255, (address + 0x3f0) >> 8,
   0x21, address & 255, address >> 8, 0x36, 0, // counter = 0
   0x34, 0x01, 0xff, 0x1f, 0x0b, 0x78, 0xb1, 0x20, 0xfb, 0xc3, 9, 0]);

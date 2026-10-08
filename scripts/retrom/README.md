@@ -91,7 +91,6 @@ The original browser comparison requires a pilot build with both
 ```sh
 python3 -m unittest discover -s scripts/retrom -p 'test_*.py'
 node scripts/retrom/test_checkpoint.mjs /absolute/pfb/core-builds/mame/current coleco
-node scripts/retrom/test_checkpoint.mjs /absolute/pfb/core-builds/mame/current sg1000
 node scripts/retrom/test_checkpoint.mjs /absolute/pfb/core-builds/mame/current vintage
 node scripts/retrom/test_quickload.mjs /absolute/pfb/core-builds/mame/current build/retrom/poc-current/diagnostics
 npm --prefix scripts/retrom ci --ignore-scripts
