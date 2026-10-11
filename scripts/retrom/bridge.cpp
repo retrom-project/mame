@@ -144,7 +144,10 @@ int retrom_mame_listxml()
     std::ofstream output("/content/mame-arcade.xml", std::ios::binary);
     if (!output) return 0;
     emu_options options;
-    info_xml_creator(options, false).output(output, {}, true);
+    // Collect device types from actual machine configurations, including types
+    // provided by side modules that are absent from the main registration list.
+    auto const machines = [](char const *name, bool &) { return driver_list::find(name) >= 0; };
+    info_xml_creator(options, false).output(output, machines, true);
     return output.good() ? 1 : 0;
 }
 

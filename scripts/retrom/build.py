@@ -45,6 +45,25 @@ def generate(name, sources, env):
     return project
 
 
+def load_families(pilot=False):
+    families = json.loads((ROOT / "scripts/retrom/families.json").read_text())
+    legacy = json.loads((ROOT / "scripts/retrom/legacy_arcade_sources.json").read_text())
+    if not pilot:
+        if legacy["schemaVersion"] != 1 or legacy["oldMachineCount"] != 5294:
+            raise RuntimeError("Arcade source inventory mismatch")
+        families.update(legacy["families"])
+        additions = json.loads((ROOT / "scripts/retrom/arcade_source_additions.json").read_text())
+        for name, family in additions.items():
+            current = families.get(name, family)
+            families[name] = {
+                **current,
+                "sources": sorted(set(current["sources"]) | set(family["sources"])),
+            }
+    else:
+        families["pacman"]["arcade"] = True
+    return families, legacy
+
+
 def main():
     output = Path(sys.argv[1]).resolve()
     output.mkdir(parents=True, exist_ok=True)
@@ -54,14 +73,7 @@ def main():
         host = ["make", "-C", ROOT / "3rdparty/genie/build/gmake.linux", "CC=gcc", "CXX=g++", "AR=ar"]
         run([*host, "clean"])
         run([*host, "-j4"])
-    families = json.loads((ROOT / "scripts/retrom/families.json").read_text())
-    legacy = json.loads((ROOT / "scripts/retrom/legacy_arcade_sources.json").read_text())
-    if os.environ.get("RETROM_MAME_ARCADE_PILOT") != "1":
-        if legacy["schemaVersion"] != 1 or legacy["oldMachineCount"] != 5294:
-            raise RuntimeError("Arcade source inventory mismatch")
-        families.update(legacy["families"])
-    else:
-        families["pacman"]["arcade"] = True
+    families, legacy = load_families(os.environ.get("RETROM_MAME_ARCADE_PILOT") == "1")
     projects = {name: generate("poc_" + name, family["sources"], env)
                 for name, family in families.items()}
     union = sorted({source for family in families.values() for source in family["sources"]})
