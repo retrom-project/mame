@@ -1,0 +1,117 @@
+{
+  "arcade_acorn": {
+    "sources": [
+      "acorn/ssfindo.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_bmc": {
+    "sources": [
+      "bmc/bmcbowl.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_dgrm": {
+    "sources": [
+      "dgrm/pokechmp.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_eolith": {
+    "sources": [
+      "eolith/ghosteo.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_gaelco": {
+    "sources": [
+      "gaelco/gaelco3d.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_ice": {
+    "sources": [
+      "ice/skimaxx.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_igs": {
+    "sources": [
+      "igs/igs017.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_konami": {
+    "sources": [
+      "konami/gticlub.cpp",
+      "konami/hornet.cpp",
+      "konami/ksys573.cpp",
+      "konami/ultrsprt.cpp",
+      "konami/zr107.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_misc": {
+    "sources": [
+      "misc/crystal.cpp",
+      "misc/megaphx.cpp",
+      "misc/ttchamp.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_namco": {
+    "sources": [
+      "namco/namcofl.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_nintendo": {
+    "sources": [
+      "nintendo/aleck64.cpp",
+      "nintendo/snesb.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_sega": {
+    "sources": [
+      "sega/coolridr.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_seta": {
+    "sources": [
+      "seta/simple_st0016.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_sony": {
+    "sources": [
+      "sony/taitogn.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_taito": {
+    "sources": [
+      "taito/taitojc.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_tatsumi": {
+    "sources": [
+      "tatsumi/kingdrby.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_tch": {
+    "sources": [
+      "tch/wheelfir.cpp"
+    ],
+    "arcade": true
+  },
+  "arcade_williams": {
+    "sources": [
+      "williams/midzeus.cpp"
+    ],
+    "arcade": true
+  }
+}
