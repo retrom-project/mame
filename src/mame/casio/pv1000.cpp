@@ -378,10 +378,14 @@ DEVICE_IMAGE_LOAD_MEMBER(pv1000_state::cart_load)
 {
 	uint32_t size = m_cart->common_get_size("rom");
 
-	if (size != 0x2000 && size != 0x4000 && size != 0x8000)
-		return std::make_pair(image_error::INVALIDLENGTH, "Unsupported cartridge size (must be 8K, 16K or 32K)");
+	if (!size || size > 0x8000)
+		return std::make_pair(image_error::INVALIDLENGTH, "Unsupported cartridge size (must be between 1 byte and 32K)");
 
-	m_cart->rom_alloc(size, GENERIC_ROM8_WIDTH, ENDIANNESS_LITTLE);
+	// Homebrew images may omit unused trailing ROM space. Allocate the physical
+	// cartridge capacity, keeping the original file and its bytes untouched.
+	uint32_t capacity = size <= 0x2000 ? 0x2000 : size <= 0x4000 ? 0x4000 : 0x8000;
+	m_cart->rom_alloc(capacity, GENERIC_ROM8_WIDTH, ENDIANNESS_LITTLE);
+	std::fill_n(m_cart->get_rom_base(), capacity, 0xff);
 	m_cart->common_load_rom(m_cart->get_rom_base(), size, "rom");
 
 	return std::make_pair(std::error_condition(), std::string());

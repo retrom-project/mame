@@ -164,9 +164,11 @@ other Apple models have not been admitted to the product target. Atom accepts
 a single ATM quickload file and mounts abasic.ic20 plus afloat.ic21; the disk
 expansion is disabled. Machine-code ATM files run at their execution address;
 BASIC programs may require a physical RUN command. UEF and disks are not product
-inputs. PV-1000 accepts one 8/16/32 KiB cartridge without firmware. SG-1000 accepts
-one 8-64 KiB cartridge without firmware; ColecoVision accepts one 8-32 KiB
-cartridge and requires its 8 KiB system ROM. Sega Model 2 is part of the same
+inputs. PV-1000 accepts a nonempty cartridge up to 32 KiB without firmware;
+its loader fills omitted trailing space to the physical 8/16/32 KiB capacity.
+SG-1000 accepts a nonempty cartridge up to 64 KiB without firmware;
+ColecoVision accepts a nonempty cartridge up to 32 KiB and requires its 8 KiB
+system ROM. Original cartridge files are not rewritten. Sega Model 2 is part of the same
 Arcade Current target and uses exact-build DAT validation for ROM sets. Raw native state is wrapped with content and native-build
 identities by the runtime; the Provider's public boundary compresses it once.
 
