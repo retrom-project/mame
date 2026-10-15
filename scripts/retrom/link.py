@@ -146,7 +146,7 @@ def link_all(root, build, output, project, projects, families, env):
                        if symbol not in ("memory", "__indirect_function_table", "__memory_base", "__table_base")})
     retain = build / "retain.rsp"
     retain.write_text("\n".join("-Wl,--export-if-defined=" + symbol for symbol in required) + "\n")
-    flags = ["--no-entry", "-sMODULARIZE=1", "-sEXPORT_ES6=1", "-sEXPORT_NAME=createMame", "-sENVIRONMENT=web,node",
+    flags = ["--no-entry", "-sMODULARIZE=1", "-sEXPORT_ES6=1", "-sEXPORT_NAME=createMame", "-sENVIRONMENT=web,node,worker",
              "-sALLOW_MEMORY_GROWTH=1", "-sINITIAL_MEMORY=67108864", "-sSTACK_SIZE=5242880",
              "-sFORCE_FILESYSTEM=1", "-sASSERTIONS=1", "-sEXPORTED_FUNCTIONS=" + json.dumps(["_" + x for x in EXPORTS]),
              '-sEXPORTED_RUNTIME_METHODS=["FS","ccall","UTF8ToString"]']
